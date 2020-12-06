@@ -15,6 +15,10 @@ class App extends React.Component {
       isPlay: false,
       title: 'Session'
     }
+    this.sessionEndedAudio = new Audio(process.env.PUBLIC_URL + "/audio/accomplished-579.ogg");
+    this.sessionEndedAudio.preload = 'auto';
+    this.breakEndedAudio = new Audio(process.env.PUBLIC_URL + "/audio/plucky-564.ogg");
+    this.breakEndedAudio.preload = 'auto';
   }
 
   handleIncrease = (title) => {
@@ -88,6 +92,25 @@ class App extends React.Component {
         const { timeCounter, title, breakTime, sessionTime } = this.state;
         
         if(timeCounter === 0) {
+          if(Notification.permission === 'granted') {
+            let message;
+            if(title === 'Session') {
+              message = `Great job, give yourself a break!`;
+            }
+            else if(title === 'Break'){
+              message = `Ready for the next Session?`;
+            }
+            let notification = new Notification(message, {silent: true});
+            setTimeout(() => {
+              notification.close();
+            }, 5000)
+          }
+          if(title === 'Session') {
+            this.sessionEndedAudio.play();
+          }
+          else {
+            this.breakEndedAudio.play();
+          }
           this.setState({
             title: (title === 'Session') ? 'Break' : 'Session',
             timeCounter: (title === 'Session') ? (breakTime * 60) : (sessionTime * 60)
@@ -103,15 +126,30 @@ class App extends React.Component {
   }
 
   handleReset = () => {
-    console.log('click reset');
-    clearInterval(this.loop);
-    this.loop = undefined;
-    this.setState({
-      timeCounter: this.state.sessionTime * 60,
-      isPlay: false,
-      title: 'Session'
-    });
-    
+    const {isPlay} = this.state;
+    if(isPlay){
+      console.log('click reset');
+      clearInterval(this.loop);
+      this.loop = undefined;
+      this.setState({
+        timeCounter: this.state.sessionTime * 60,
+        isPlay: false,
+        title: 'Session'
+      });
+      if(Notification.permission === 'granted'){
+        let message = `Time reset`;
+        let notification = new Notification(message, {silent: true});
+        setTimeout(() => {
+          notification.close();
+        }, 2000)
+      }
+    }
+  }
+
+  componentDidMount() {
+    if(Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
   }
 
   componentWillUnmount() {
@@ -123,8 +161,7 @@ class App extends React.Component {
     const { title, sessionTime, breakTime, isPlay } = this.state;
     if(isPlay){
       this.setState({
-        title: (title === 'Session') ? 'Break' : 'Session',
-        timeCounter: (title === 'Session') ? (breakTime * 60) : (sessionTime * 60)
+        timeCounter: 0
       })
     }
   }
